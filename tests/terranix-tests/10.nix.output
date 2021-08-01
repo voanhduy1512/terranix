@@ -1,0 +1,1 @@
+{"data":{"ami":{"this":{"name":"test"}}},"module":{"eks":{"ami":"${data.ami.this.id}","source":"github.com/example/eks"}},"resource":{"test":{"that":{"name":"that","ref":"${test.this.computed_attribute}"},"this":{"dns":"${module.eks.cluster_id}","name":"this"}}}}

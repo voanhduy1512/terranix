@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  resource.test = lib.mkAssert (true) "test" {
+  resource.test.name = lib.mkAssert (true) "test" {
     key = "value";
   };
 }

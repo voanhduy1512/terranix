@@ -91,6 +91,16 @@ with lib; [
   ''
 
   ''
+    @test "attribute : works for resource, module and data" {
+    run ${terranix}/bin/terranix --quiet ${./terranix-tests/10.nix}
+    [ "$status" -eq 0 ]
+    [ "$output" =  ${
+      escapeShellArg (fileContents ./terranix-tests/10.nix.output)
+    } ]
+    }
+  ''
+
+  ''
     @test "terranix-doc-json: works with simple module" {
     run ${terranix}/bin/terranix-doc-json --quiet ${
       ./terranix-doc-json-tests/01.nix

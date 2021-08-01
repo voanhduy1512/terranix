@@ -6,25 +6,58 @@
 with lib;
 
 let
-  mkMagicMergeOption = { description ? "", example ? { }, default ? { }, ... }:
-    mkOption {
-      inherit example description default;
-      type = with lib.types;
-        let
-          valueType = nullOr (oneOf [
-            bool
-            int
-            float
-            str
-            (attrsOf valueType)
-            (listOf valueType)
-          ]) // {
-            description = "";
-            emptyValue.value = { };
-          };
-        in valueType;
+  resourceType = mkOptionType {
+    name = "resourceType";
+    description = "Type to represent terraform resource or module";
+    check = isAttrs;
+    merge = loc: defs:
+      mapAttrs (n: v: v.value) (
+        filterAttrs (n: v: v ? value) (
+          zipAttrsWith (
+            name: defs:
+              (mergeDefinitions (loc ++ [ name ]) defaultType defs).optionalValue
+          )
+            # Push down position info.
+            (map (def: mapAttrs (n: v: { inherit (def) file; value = v; }) def.value) defs)
+        )
+      ) // {
+        attribute = input: "\${${concatStringsSep "." (drop 1 loc ++ [ input ])}}";
+      };
+    emptyValue = { value = {}; };
+  };
+  dataType = mkOptionType {
+    name = "dataType";
+    description = "Type to represent terraform data";
+    check = isAttrs;
+    merge = loc: foldl' (res: def: res // def.value) {
+      attribute = input: "\${${concatStringsSep "." (loc ++ [ input ])}}";
     };
-in {
+    emptyValue = { value = {}; };
+  };
+  defaultType = with lib.types;
+    let
+      valueType = nullOr (
+        oneOf [
+          bool
+          int
+          float
+          str
+          (attrsOf valueType)
+          (listOf valueType)
+        ]
+      ) // {
+        description = "";
+        emptyValue.value = {};
+      };
+    in
+      valueType;
+
+  mkMagicMergeOption = { description ? "", example ? {}, default ? {}, type ? defaultType, ... }:
+    mkOption {
+      inherit example description default type;
+    };
+in
+{
 
   options = {
     data = mkMagicMergeOption {
@@ -34,6 +67,7 @@ in {
         option.
         See for more details : https://www.terraform.io/docs/configuration/data-sources.html
       '';
+      type = with lib.types; attrsOf (attrsOf (nullOr dataType));
     };
     locals = mkMagicMergeOption {
       example = {
@@ -59,6 +93,7 @@ in {
         do with the module system of terranix or nixos.
         See for more details : https://www.terraform.io/docs/configuration/modules.html
       '';
+      type = with lib.types; attrsOf (nullOr dataType);
     };
     output = mkMagicMergeOption {
       example = {
@@ -95,6 +130,7 @@ in {
         The backbone of terraform and terranix to change and create state.
         See for more details : https://www.terraform.io/docs/configuration/resources.html
       '';
+      type = with lib.types; attrsOf (attrsOf (nullOr resourceType));
     };
     terraform = mkMagicMergeOption {
       example = {

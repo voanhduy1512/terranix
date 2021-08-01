@@ -6,7 +6,7 @@ with builtins;
 
 let
 
-  terranix = pkgs.callPackages ../default.nix { };
+  terranix = pkgs.callPackage ../default.nix { };
 
   createTest = testimport:
     let
@@ -32,6 +32,7 @@ in pkgs.mkShell {
     pup
     pandoc
     testScript
+    jq
 
     bats
   ];

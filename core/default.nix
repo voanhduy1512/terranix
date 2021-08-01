@@ -20,11 +20,12 @@ let
       str = configuration;
       list = map sanitize configuration;
       null = null;
+      lambda = null;
       set = let
         stripped_a = lib.flip lib.filterAttrs configuration
-          (name: value: name != "_module" && name != "_ref");
+          (name: value: name != "_module" && name != "attribute" && name != "_ref");
         stripped_b = lib.flip lib.filterAttrs configuration
-          (name: value: name != "_module" && name != "_ref" && value != null);
+          (name: value: name != "_module" && name != "attribute" && name != "_ref" && value != null);
         recursiveSanitized = if strip_nulls then
           lib.mapAttrs (lib.const sanitize) stripped_b
         else
@@ -53,7 +54,7 @@ let
       evaluated = evaluateConfiguration configuration;
       result = sanitize evaluated.config;
       whitelist = key:
-        if result."${key}" != null then {
+        if result."${key}" != null && result."${key}" != {} then {
           "${key}" = result."${key}";
         } else
           { };
